@@ -217,24 +217,25 @@ if(WITH_COTIRE)
   include(cotire OPTIONAL)
 endif() 
 
-# Get uname output
-function(Uname output pattern)
+# Get distro name from /etc/os-release
+function(DistroName output)
+  # regex to print <DistroName> from ^NAME=<DistroName>, exclude any quotes
+  set(distroname_regex "s/^['\"]?NAME['\"]?=['\"]?([^'\"]+)['\"]?$/\\1/p")
   execute_process(
-      COMMAND sh -c "uname -a 2>&1"
-      COMMAND grep "${pattern}"
-      OUTPUT_VARIABLE ${output}
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    COMMAND sh -c "cat /etc/os-release 2>&1"
+    COMMAND sed -rn "${distroname_regex}"
+    OUTPUT_VARIABLE ${output}
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
   set(${output} "${${output}}" PARENT_SCOPE)
-endfunction(Uname)
+endfunction(DistroName)
 
 # TODO(unassigned): extend Boost.Python cross-platform build support 
 set(additional_components)
 if (WITH_PYTHON)
-  Uname(ARCH_LINUX "ARCH")
-  Uname(UBUNTU "Ubuntu")
-  if (APPLE OR ARCH_LINUX)
+  DistroName(DISTRO_NAME)
+  if (APPLE OR DISTRO_NAME STREQUAL "Arch Linux")
     set(additional_components python3)
-  elseif (UBUNTU)
+  elseif (DISTRO_NAME STREQUAL "Ubuntu")
     set(additional_components python-py35)
   else()
     message(FATAL_ERROR
